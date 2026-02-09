@@ -13,6 +13,10 @@ using BrandVault.Api.Services.FileStorage;
 using BrandVault.Api.Hubs;
 using BrandVault.Api.Middleware;
 
+// Tell Npgsql to accept DateTime with any Kind (Local, Unspecified, Utc)
+// instead of throwing when Kind != Utc for 'timestamp with time zone' columns.
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // =============================================================================

@@ -16,4 +16,5 @@ public interface IReviewService
     Task<AssetDetailResponse> GetPublicAssetAsync(string token, Guid assetId);
     Task<CommentResponse> CreateClientCommentAsync(string token, Guid assetId, PublicCommentRequest request);
     Task<ApprovalResponse> CreateClientApprovalAsync(string token, Guid assetId, PublicApprovalRequest request);
+    Task<(Stream FileStream, string ContentType, string FileName)> DownloadPublicVersionAsync(string token, Guid assetId, int versionNumber);
 }

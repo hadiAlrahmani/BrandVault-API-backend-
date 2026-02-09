@@ -70,6 +70,22 @@ public class AppDbContext : DbContext
             }
         }
 
+        // Normalize all DateTime properties to UTC — Npgsql requires Kind=Utc
+        // for 'timestamp with time zone' columns.
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State is EntityState.Added or EntityState.Modified)
+            {
+                foreach (var prop in entry.Properties)
+                {
+                    if (prop.CurrentValue is DateTime dt && dt.Kind == DateTimeKind.Unspecified)
+                    {
+                        prop.CurrentValue = DateTime.SpecifyKind(dt, DateTimeKind.Utc);
+                    }
+                }
+            }
+        }
+
         return base.SaveChangesAsync(cancellationToken);
     }
 }

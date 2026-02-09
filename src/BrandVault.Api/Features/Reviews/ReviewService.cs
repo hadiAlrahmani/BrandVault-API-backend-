@@ -2,6 +2,7 @@ namespace BrandVault.Api.Features.Reviews;
 
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.EntityFrameworkCore;
 using BrandVault.Api.Common;
 using BrandVault.Api.Data;
@@ -10,6 +11,7 @@ using BrandVault.Api.Features.Reviews.DTOs;
 using BrandVault.Api.Hubs;
 using BrandVault.Api.Models;
 using BrandVault.Api.Models.Enums;
+using BrandVault.Api.Services.FileStorage;
 
 /// <summary>
 /// Review link management + public review endpoints.
@@ -25,11 +27,14 @@ public class ReviewService : IReviewService
 {
     private readonly AppDbContext _context;
     private readonly IHubContext<ReviewHub> _hubContext;
+    private readonly IFileStorageService _fileStorage;
+    private static readonly FileExtensionContentTypeProvider _contentTypeProvider = new();
 
-    public ReviewService(AppDbContext context, IHubContext<ReviewHub> hubContext)
+    public ReviewService(AppDbContext context, IHubContext<ReviewHub> hubContext, IFileStorageService fileStorage)
     {
         _context = context;
         _hubContext = hubContext;
+        _fileStorage = fileStorage;
     }
 
     // =========================================================================
@@ -302,6 +307,41 @@ public class ReviewService : IReviewService
             .SendAsync("NewApproval", response);
 
         return response;
+    }
+
+    public async Task<(Stream FileStream, string ContentType, string FileName)> DownloadPublicVersionAsync(
+        string token, Guid assetId, int versionNumber)
+    {
+        var reviewLink = await ValidateTokenAsync(token);
+
+        var version = await _context.AssetVersions
+            .Include(v => v.Asset)
+            .FirstOrDefaultAsync(v =>
+                v.AssetId == assetId &&
+                v.VersionNumber == versionNumber &&
+                v.Asset.WorkspaceId == reviewLink.WorkspaceId);
+
+        if (version is null)
+        {
+            throw new ApiException("Version not found in this workspace", 404);
+        }
+
+        var absolutePath = _fileStorage.GetFullPath(version.FilePath);
+        if (!File.Exists(absolutePath))
+        {
+            throw new ApiException("File not found on disk", 404);
+        }
+
+        var fileName = Path.GetFileName(version.FilePath);
+        if (!_contentTypeProvider.TryGetContentType(fileName, out var contentType))
+        {
+            contentType = "application/octet-stream";
+        }
+
+        var stream = new FileStream(absolutePath, FileMode.Open, FileAccess.Read);
+        var downloadName = $"{version.Asset.Name}_v{version.VersionNumber}{version.Asset.FileType}";
+
+        return (stream, contentType, downloadName);
     }
 
     // =========================================================================

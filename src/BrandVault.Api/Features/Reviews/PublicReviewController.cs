@@ -68,4 +68,15 @@ public class PublicReviewController : ControllerBase
         var approval = await _reviewService.CreateClientApprovalAsync(token, assetId, request);
         return Created("", approval);
     }
+
+    /// <summary>
+    /// GET /api/reviews/:token/assets/:assetId/versions/:versionNumber/download
+    /// Download/view a specific version's file via public review link.
+    /// </summary>
+    [HttpGet("{token}/assets/{assetId:guid}/versions/{versionNumber:int}/download")]
+    public async Task<IActionResult> DownloadVersion(string token, Guid assetId, int versionNumber)
+    {
+        var (stream, contentType, fileName) = await _reviewService.DownloadPublicVersionAsync(token, assetId, versionNumber);
+        return File(stream, contentType, fileName);
+    }
 }
