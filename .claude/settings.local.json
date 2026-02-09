@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet --version:*)",
+      "Bash(dotnet --list-sdks:*)",
+      "Bash(dotnet new:*)",
+      "Bash(npx -y @modelcontextprotocol/server-supabase:*)",
+      "Bash(dotnet ef migrations script:*)",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__list_tables",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9:*)",
+      "Bash(dotnet run:*)",
+      "Bash(curl:*)"
+    ]
+  }
+}
